@@ -16,13 +16,17 @@ jobs:
 
       - name: Inject secrets into app.js
         env:
-          WORKER_URL: ${{ secrets.WORKER_URL }}
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           sed -i \
-            -e "s|__WORKER_URL__|$WORKER_URL|g" \
-            -e "s|__AUTH_TOKEN__|$AUTH_TOKEN|g" \
+            -e "s|__B2_KEY_ID__|$B2_KEY_ID|g" \
+            -e "s|__B2_APP_KEY__|$B2_APP_KEY|g" \
+            -e "s|__B2_BUCKET__|$B2_BUCKET|g" \
+            -e "s|__B2_ENDPOINT__|$B2_ENDPOINT|g" \
             -e "s|__APP_PASSWORD__|$APP_PASSWORD|g" \
             app.js
 

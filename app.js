@@ -1,13 +1,18 @@
-const WORKER_URL = '__WORKER_URL__'
-const AUTH_TOKEN = '__AUTH_TOKEN__'
+const B2_KEY_ID   = '__B2_KEY_ID__'
+const B2_APP_KEY  = '__B2_APP_KEY__'
+const B2_BUCKET   = '__B2_BUCKET__'
+const B2_ENDPOINT = '__B2_ENDPOINT__'
 const APP_PASSWORD = '__APP_PASSWORD__'
+
+const B2_BASE = `https://${B2_BUCKET}.${B2_ENDPOINT}`
+const REGION  = B2_ENDPOINT.split('.')[1] // eu-central-003
 
 let allSongs = []
 let filteredSongs = []
 let playlists = []
 let activePlaylist = null
 let currentIndex = -1
-let currentSongName = null  // track playing song by name, not just index
+let currentSongName = null
 let isPlaying = false
 let isShuffle = false
 let isRepeat = false
@@ -43,19 +48,77 @@ function showApp() {
   loadLibrary()
 }
 
+// ── AWS Signature V4 ───────────────────────────────────
+async function hmac(key, msg) {
+  const k = typeof key === 'string' ? new TextEncoder().encode(key) : key
+  const ck = await crypto.subtle.importKey('raw', k, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  return new Uint8Array(await crypto.subtle.sign('HMAC', ck, new TextEncoder().encode(msg)))
+}
+
+async function hmacHex(key, msg) {
+  return [...await hmac(key, msg)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function sha256hex(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg))
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function getSigningKey(date) {
+  const kDate    = await hmac(`AWS4${B2_APP_KEY}`, date)
+  const kRegion  = await hmac(kDate, REGION)
+  const kService = await hmac(kRegion, 's3')
+  return hmac(kService, 'aws4_request')
+}
+
+async function b2Fetch(path) {
+  const host = `${B2_BUCKET}.${B2_ENDPOINT}`
+  const now  = new Date()
+  const datestamp = now.toISOString().slice(0, 10).replace(/-/g, '')
+  const timestamp = now.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+  const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+  const [pathOnly, qs = ''] = path.split('?')
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${timestamp}\n`
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date'
+  const canonicalRequest = ['GET', pathOnly, qs, canonicalHeaders, signedHeaders, payloadHash].join('\n')
+
+  const credentialScope = `${datestamp}/${REGION}/s3/aws4_request`
+  const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${await sha256hex(canonicalRequest)}`
+  const signingKey = await getSigningKey(datestamp)
+  const signature = await hmacHex(signingKey, stringToSign)
+
+  const authorization = `AWS4-HMAC-SHA256 Credential=${B2_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
+
+  return fetch(`${B2_BASE}${path}`, {
+    headers: {
+      'Host': host,
+      'x-amz-date': timestamp,
+      'x-amz-content-sha256': payloadHash,
+      'Authorization': authorization
+    }
+  })
+}
+
 // ── Load library ──────────────────────────────────────
 async function loadLibrary() {
   try {
-    const res = await fetch(`${WORKER_URL}/init`, {
-      headers: { 'X-Auth-Token': AUTH_TOKEN }
-    })
-
-    if (res.status === 401) { showToast('Invalid token', true); return showSetupScreen() }
+    const res = await b2Fetch('/?list-type=2&max-keys=1000')
     if (!res.ok) throw new Error()
+    const xml = await res.text()
 
-    const data = await res.json()
-    allSongs = data.songs
-    playlists = data.playlists
+    const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)]
+      .map(m => m[1])
+      .filter(k => /\.(mp3|ogg|wav|flac|m4a|aac)$/i.test(k))
+
+    allSongs = keys.map(key => ({
+      name: key,
+      displayName: key.split('/').pop(),
+      playlist: key.includes('/') ? key.split('/')[0] : null,
+      size: null
+    }))
+
+    playlists = [...new Set(allSongs.filter(s => s.playlist).map(s => s.playlist))].sort()
 
     renderPlaylistTabs()
     filterAndRender(null)
@@ -66,7 +129,7 @@ async function loadLibrary() {
   } catch {
     document.getElementById('loading').style.display = 'none'
     document.getElementById('setup-screen').style.display = 'flex'
-    showToast('Cannot connect to worker', true)
+    showToast('Cannot connect to Backblaze B2', true)
   }
 }
 
@@ -94,7 +157,6 @@ function selectPlaylist(pl) {
 
 function filterAndRender(pl) {
   filteredSongs = pl === null ? allSongs : allSongs.filter(s => s.playlist === pl)
-  // re-resolve currentIndex based on currently playing song name
   currentIndex = currentSongName
     ? filteredSongs.findIndex(s => s.name === currentSongName)
     : -1
@@ -109,7 +171,7 @@ function renderList() {
   document.getElementById('song-count').textContent = `${filteredSongs.length} tracks`
 
   if (!filteredSongs.length) {
-    list.innerHTML = `<div class="empty-state">No songs found.<br>Upload MP3s to your R2 bucket${activePlaylist ? `<br>inside the <b>${activePlaylist}/</b> folder` : ''}.</div>`
+    list.innerHTML = `<div class="empty-state">No songs found.<br>Upload MP3s to your B2 bucket${activePlaylist ? `<br>inside the <b>${activePlaylist}/</b> folder` : ''}.</div>`
     return
   }
 
@@ -120,14 +182,12 @@ function renderList() {
         <div class="song-title">${cleanName(s.displayName || s.name)}</div>
         <div class="song-meta">
           ${s.playlist && activePlaylist === null ? `<span class="song-pl-tag">${s.playlist}</span>` : ''}
-          <span>${formatSize(s.size)}</span>
         </div>
       </div>
     </div>`).join('')
 }
 
 function cleanName(f) { return f.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') }
-function formatSize(b) { return b ? (b / 1048576).toFixed(1) + ' MB' : '' }
 
 // ── Play ──────────────────────────────────────────────
 async function playSong(index) {
@@ -153,9 +213,7 @@ async function playSong(index) {
   try {
     let blobUrl = blobCache[song.name]
     if (!blobUrl) {
-      const res = await fetch(`${WORKER_URL}/file/${encodeURIComponent(song.name)}`, {
-        headers: { 'X-Auth-Token': AUTH_TOKEN }
-      })
+      const res = await b2Fetch(`/${encodeURIComponent(song.name)}`)
       if (!res.ok) throw new Error()
       blobUrl = URL.createObjectURL(await res.blob())
       blobCache[song.name] = blobUrl
