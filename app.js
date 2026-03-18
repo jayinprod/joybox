@@ -276,7 +276,16 @@ function toggleRepeat() {
 
 function setVolume(v) { audio.volume = v }
 
+function seekTouch(e) {
+  e.preventDefault()
+  if (!audio.duration) return
+  const r = document.getElementById('progress-bar').getBoundingClientRect()
+  const touch = e.changedTouches[0]
+  audio.currentTime = Math.max(0, Math.min(1, (touch.clientX - r.left) / r.width)) * audio.duration
+}
+
 function seek(e) {
+  if (e.touches) return // handled by seekTouch
   if (!audio.duration) return
   const r = document.getElementById('progress-bar').getBoundingClientRect()
   audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration

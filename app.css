@@ -3,7 +3,7 @@
       --surface: #111111;
       --surface2: #1a1a1a;
       --border: #2a2a2a;
-      --accent: #c8ff00;
+      --accent: #00b4ff;
       --accent2: #ff6b35;
       --text: #f0f0f0;
       --muted: #555;
@@ -147,8 +147,8 @@
       color: var(--muted);
       cursor: pointer;
       font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      padding: 8px 14px;
+      font-size: 12px;
+      padding: 11px 20px;
       white-space: nowrap;
       transition: all 0.2s;
       text-transform: uppercase;
@@ -174,7 +174,7 @@
       position: absolute;
       top: -40px; right: -40px;
       width: 160px; height: 160px;
-      background: radial-gradient(circle, rgba(200,255,0,0.08) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(0,180,255,0.08) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -232,6 +232,9 @@
     .progress-wrap { margin-bottom: 16px; }
 
     #progress-bar {
+      touch-action: none;
+      padding: 12px 0;
+      margin: -12px 0;
       width: 100%; height: 4px;
       background: var(--border);
       border-radius: 2px;
@@ -293,7 +296,7 @@
     }
 
     .song-item:hover { border-color: var(--border); }
-    .song-item.active { border-color: var(--accent); background: rgba(200,255,0,0.05); }
+    .song-item.active { border-color: var(--accent); background: rgba(0,180,255,0.05); }
 
     .song-num { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); width: 20px; text-align: center; flex-shrink: 0; }
     .song-item.active .song-num { color: var(--accent); }
