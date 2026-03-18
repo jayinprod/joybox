@@ -1,5 +1,5 @@
 const CACHE = 'joybox-v1'
-const ASSETS = ['/', '/index.html', '/manifest.json']
+const ASSETS = ['/', '/index.html', '/app.js', '/app.css', '/manifest.json']
 
 self.addEventListener('install', e => {
   e.waitUntil(
