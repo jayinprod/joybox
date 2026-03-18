@@ -179,8 +179,10 @@
     }
 
     .track-art {
-      width: 100%;
+      width: 60%;
+      max-width: 220px;
       aspect-ratio: 1;
+      align-self: center;
       background: var(--surface2);
       border-radius: 14px;
       display: flex;
