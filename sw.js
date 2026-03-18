@@ -1,5 +1,5 @@
 const CACHE = 'joybox-v1'
-const ASSETS = ['/', '/index.html', '/app.js', '/app.css', '/manifest.json']
+const ASSETS = ['/joybox/', '/joybox/index.html', '/joybox/app.js', '/joybox/app.css', '/joybox/manifest.json']
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -18,8 +18,8 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  // For audio blobs and worker API calls — always go network
-  if (e.request.url.includes('workers.dev') || e.request.url.startsWith('blob:')) {
+  // For audio blobs — always go network
+  if (e.request.url.startsWith('blob:') || e.request.url.includes('backblazeb2.com')) {
     return
   }
   // For app shell — cache first
