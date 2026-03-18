@@ -328,12 +328,16 @@ function switchTab(tab) {
 // ── Toast ─────────────────────────────────────────────
 let toastTimer = null
 function showToast(msg, isError = false) {
+  if (!msg) return
   const t = document.getElementById('toast')
   t.textContent = msg
   t.classList.toggle('error', isError)
   t.classList.add('show')
   clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500)
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show')
+    setTimeout(() => { t.textContent = '' }, 300)
+  }, 2500)
 }
 
 // ── Service Worker ────────────────────────────────────

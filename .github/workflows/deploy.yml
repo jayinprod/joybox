@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject secrets into app.js
+      - name: Inject secrets and cache version
         env:
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
@@ -22,6 +22,7 @@ jobs:
           B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
+          CACHE_VERSION=$(date +%s)
           sed -i \
             -e "s|__B2_KEY_ID__|$B2_KEY_ID|g" \
             -e "s|__B2_APP_KEY__|$B2_APP_KEY|g" \
@@ -29,6 +30,7 @@ jobs:
             -e "s|__B2_ENDPOINT__|$B2_ENDPOINT|g" \
             -e "s|__APP_PASSWORD__|$APP_PASSWORD|g" \
             app.js
+          sed -i "s|__CACHE_VERSION__|$CACHE_VERSION|g" sw.js
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
