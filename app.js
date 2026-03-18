@@ -194,10 +194,6 @@ async function playSong(index) {
   document.getElementById('track-name').textContent = cleanName(song.displayName || song.name)
   document.getElementById('track-sub').textContent = song.name
 
-  const badge = document.getElementById('playlist-badge')
-  badge.textContent = song.playlist || ''
-  badge.style.display = song.playlist ? 'block' : 'none'
-
   updateActiveItem()
   updateMediaSession(song)
   audio.pause(); audio.src = ''
