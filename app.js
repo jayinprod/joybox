@@ -21,24 +21,19 @@ let audio = new Audio()
 let blobCache = {}
 
 // ── Init ──────────────────────────────────────────────
-if (localStorage.getItem('joybox_unlocked') === '1') {
-  showApp()
-} else {
-  document.getElementById('setup-screen').style.display = 'flex'
-  setTimeout(() => document.getElementById('app-password-input')?.focus(), 100)
-}
+// Always ask password on open
+document.getElementById('setup-screen').style.display = 'flex'
+setTimeout(() => document.getElementById('app-password-input')?.focus(), 100)
 
 function saveConfig() {
   const entered = document.getElementById('app-password-input').value
   if (!entered) return showToast('Enter your password', true)
   if (entered !== APP_PASSWORD) return showToast('Wrong password', true)
-  localStorage.setItem('joybox_unlocked', '1')
   showApp()
 }
 
 function resetConfig() {
   if (!confirm('Lock and reset?')) return
-  localStorage.removeItem('joybox_unlocked')
   location.reload()
 }
 
