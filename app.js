@@ -196,7 +196,7 @@ async function playSong(index) {
 
   updateActiveItem()
   updateMediaSession(song)
-  audio.pause(); audio.src = ''
+  audio.pause(); audio.removeAttribute('src'); audio.load()
   setPlayIcon(false); isPlaying = false
 
   showToast(`Loading ${cleanName(song.displayName || song.name)}…`)
@@ -229,7 +229,7 @@ function updateActiveItem() {
 
 // ── Controls ──────────────────────────────────────────
 function togglePlay() {
-  if (!audio.src) { if (filteredSongs.length) playSong(0); return }
+  if (!audio.currentSrc && currentIndex === -1) { if (filteredSongs.length) playSong(0); return }
   if (isPlaying) { audio.pause(); isPlaying = false; setPlayIcon(false); stopVisualizer() }
   else { audio.play(); isPlaying = true; setPlayIcon(true); startVisualizer() }
 }
@@ -301,27 +301,8 @@ function fmt(s) {
   return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
 }
 
-// ── Visualizer ────────────────────────────────────────
-const vizEl = document.getElementById('visualizer')
-for (let i = 0; i < 24; i++) {
-  const b = document.createElement('div')
-  b.className = 'viz-bar'; b.style.height = '4px'
-  vizEl.appendChild(b)
-}
-const bars = vizEl.querySelectorAll('.viz-bar')
-let vizInterval = null
-
-function startVisualizer() {
-  vizEl.classList.add('active')
-  if (vizInterval) return
-  vizInterval = setInterval(() => bars.forEach(b => { b.style.height = (4 + Math.random() * 44) + 'px' }), 120)
-}
-
-function stopVisualizer() {
-  vizEl.classList.remove('active')
-  clearInterval(vizInterval); vizInterval = null
-  bars.forEach(b => b.style.height = '4px')
-}
+function startVisualizer() {}
+function stopVisualizer() {}
 
 // ── Media Session ─────────────────────────────────────
 function updateMediaSession(song) {
