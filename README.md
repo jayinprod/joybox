@@ -1,76 +1,67 @@
 # JOYBOX — Personal Music Player PWA
 
+A personal music player PWA by JoyBoy. Streams MP3s directly from Backblaze B2.
+
+## Stack
+- **App hosting** → GitHub Pages (free)
+- **Music storage** → Backblaze B2 (10GB free)
+- **No backend / Worker needed**
+
 ## Files
-- `index.html` — the app
-- `manifest.json` — PWA config
+- `index.html` — HTML structure
+- `app.css` — all styles
+- `app.js` — all logic + B2 integration
 - `sw.js` — service worker (offline support)
-- `.github/workflows/deploy.yml` — auto-deploy pipeline
-- `icon-192.png` / `icon-512.png` — app icons (add your own!)
+- `manifest.json` — PWA config
+- `icon-192.png` / `icon-512.png` — app icons
 
 ## Setup
 
-### 1. Add icons
-Add two icon images to the folder:
-- `icon-192.png` (192x192px)
-- `icon-512.png` (512x512px)
+### 1. Create Backblaze B2 bucket
+- Sign up at backblaze.com (free, no card needed)
+- Create a bucket e.g. `joybox-music` (Private)
+- Go to **App Keys** → **Add Application Key**
+- Select your bucket, Read Only access
+- Save the `keyID` and `applicationKey`
 
-You can generate free PWA icons at: https://favicon.io or https://realfavicongenerator.net
+### 2. Add GitHub Secrets
+Go to your repo → **Settings → Secrets → Actions → New repository secret**
 
-### 2. Add GitHub Actions secrets
-
-Go to your repo → **Settings → Secrets and variables → Actions → New repository secret** and add these three:
-
-| Secret name | Value |
+| Secret | Value |
 |---|---|
-| `WORKER_URL` | Your Cloudflare Worker URL, e.g. `https://music-worker.xxx.workers.dev` |
-| `AUTH_TOKEN` | The secret token your Worker checks via `X-Auth-Token` header |
-| `APP_PASSWORD` | The password users type on first launch to unlock the app |
+| `B2_KEY_ID` | Your Backblaze keyID |
+| `B2_APP_KEY` | Your Backblaze applicationKey |
+| `B2_BUCKET` | Your bucket name e.g. `joybox-music` |
+| `B2_ENDPOINT` | e.g. `s3.eu-central-003.backblazeb2.com` |
+| `APP_PASSWORD` | Password to unlock the app |
 
-> **Tip:** you can use the same value for `APP_PASSWORD` and `AUTH_TOKEN` to keep it simple.
+### 3. Enable GitHub Pages
+Repo → **Settings → Pages → Source: `gh-pages` branch → Save**
 
-### 3. Set GitHub Pages source
-
-Go to your repo → **Settings → Pages → Source: `gh-pages` branch → Save**
-
-### 4. Push to main — that's it
-
-Every push to `main` automatically:
-1. Runs the GitHub Action (~30 sec)
-2. Injects your secrets into `index.html`
-3. Publishes to `gh-pages`
-4. Live app updates at `https://jayinprod.github.io/joybox/`
-
+### 4. Push to main
 ```bash
 git add .
-git commit -m "update"
+git commit -m "init"
 git push
 ```
+GitHub Action runs automatically → injects secrets → deploys to gh-pages.
 
-You never need to build or deploy manually.
-
-### 5. Configure Cloudflare Worker
-Make sure your worker has:
-- `/init` endpoint → returns `{ songs, playlists }` JSON
-- `/file/:key` endpoint → streams the file from R2
-- `X-Auth-Token` header auth
-- CORS headers
-
-See `worker.js` for the reference implementation.
-
-### 6. Install on Android
+### 5. Install on Android
 1. Open `https://jayinprod.github.io/joybox/` in Chrome
-2. Tap three-dot menu → "Add to Home Screen"
-3. Done! It installs like a native app.
+2. Three-dot menu → **Add to Home Screen**
+3. Done!
 
-### 7. First launch
-Enter the `APP_PASSWORD` you set → tap Unlock.
-The app remembers you in `localStorage` — no re-entry on return visits.
-Use the settings icon to lock and reset.
+### 6. Upload music to B2
+- Go to Backblaze dashboard → your bucket
+- Upload MP3s directly
+- For playlists, create folders e.g. `chill/`, `workout/`
+- Files inside folders automatically appear as playlist tabs in the app
 
 ## Features
-- 🎵 Streams MP3s from Cloudflare R2 via Worker
-- 🔒 Password gate + auth token — files stay private
+- 🎵 Streams MP3s directly from Backblaze B2
+- 🔒 Password gate on app open
+- 📁 Auto playlist detection from B2 folders
 - 📱 Lock screen controls (Media Session API)
 - 🔀 Shuffle & repeat
 - 💾 Blob caching (no re-download while app is open)
-- 📶 App shell works offline after first load
+- 📶 Offline app shell after first load
