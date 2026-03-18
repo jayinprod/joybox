@@ -1,0 +1,33 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject secrets into index.html
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          sed -i \
+            -e "s|__WORKER_URL__|$WORKER_URL|g" \
+            -e "s|__AUTH_TOKEN__|$AUTH_TOKEN|g" \
+            -e "s|__APP_PASSWORD__|$APP_PASSWORD|g" \
+            index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
