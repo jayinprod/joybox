@@ -1,4 +1,4 @@
-const CACHE = 'joybox-1773859749'
+const CACHE = 'joybox-1774336674'
 const ASSETS = ['/joybox/', '/joybox/index.html', '/joybox/app.js', '/joybox/app.css', '/joybox/manifest.json']
 
 self.addEventListener('install', e => {
