@@ -265,8 +265,6 @@ function toggleRepeat() {
   document.getElementById('repeat-btn').classList.toggle('active', isRepeat)
 }
 
-function setVolume(v) { audio.volume = v }
-
 function seekTouch(e) {
   e.preventDefault()
   if (!audio.duration) return
